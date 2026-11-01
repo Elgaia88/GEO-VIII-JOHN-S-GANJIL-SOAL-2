@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kuis Geografi - Bagian 2</title>
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+<style>
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #eef2f3; color: #333; margin: 0; padding: 20px; }
+    .container { max-width: 650px; margin: 0 auto; background: #ffffff; padding: 25px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+    .hidden { display: none !important; }
+    h2 { text-align: center; color: #2c3e50; }
+    label { font-weight: bold; }
+    input, select { box-sizing: border-box; width: 100%; padding: 10px; margin: 10px 0 20px 0; border: 1px solid #ccc; border-radius: 5px; font-size: 16px; }
+    .btn { padding: 12px 20px; border: none; border-radius: 5px; cursor: pointer; background: #3498db; color: #ffffff; font-size: 16px; font-weight: bold; width: 100%; transition: background 0.3s; }
+    .btn:hover { background: #2980b9; }
+    
+    /* Font jawaban dan warna latar jangan sama - Kontras tinggi */
+    .option-btn { display: block; width: 100%; text-align: left; margin: 10px 0; background: #f8f9fa; color: #212529; border: 2px solid #e9ecef; font-weight: 500; font-size:16px; padding: 12px;}
+    .option-btn:hover { background: #e2e6ea; border-color: #dae0e5; }
+    
+    .correct { background: #28a745 !important; color: #ffffff !important; border-color: #28a745 !important; }
+    .wrong { background: #dc3545 !important; color: #ffffff !important; border-color: #dc3545 !important; }
+    
+    .header-info { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #eee; padding-bottom: 10px; margin-bottom: 20px; }
+    #timer { font-size: 22px; font-weight: bold; color: #e74c3c; background: #fadbd8; padding: 5px 10px; border-radius: 5px; min-width: 50px; text-align: center;}
+    #display-name { font-size: 18px; font-weight: bold; color: #7f8c8d; }
+    
+    #question-text { font-size: 18px; line-height: 1.5; margin-bottom: 20px; }
+    
+    .review-item { border-bottom: 1px solid #eee; padding: 15px 0; }
+    .review-item p { margin: 5px 0; }
+    .review-correct { color: #28a745; font-weight: bold; }
+    .review-wrong { color: #dc3545; font-weight: bold; }
+    .score-box { text-align: center; background: #f1f8e9; padding: 15px; border-radius: 8px; margin-bottom: 20px; }
+    .score-box h3 { margin: 0; color: #33691e; font-size: 24px; }
+</style>
+</head>
+<body>
+<div class="container" id="setup-screen">
+    <h2>Kuis Geografi (SDA) - Bagian 2</h2>
+    <label for="player-name">Nama Pemain:</label>
+    <input type="text" id="player-name" placeholder="Masukkan nama Anda di sini">
+    
+    <label for="time-select">Durasi waktu per soal:</label>
+    <select id="time-select">
+        <option value="15">15 Detik</option>
+        <option value="30">30 Detik</option>
+    </select>
+    
+    <button class="btn" onclick="startQuiz()">Mulai Kuis</button>
+</div>
+
+<div class="container hidden" id="quiz-screen">
+    <div class="header-info">
+        <span id="display-name"></span>
+        <span id="timer"></span>
+    </div>
+    <h3 id="question-text"></h3>
+    <div id="options-container"></div>
+</div>
+
+<div class="container hidden" id="review-screen">
+    <h2>Review Hasil Kuis - Bagian 2</h2>
+    <div class="score-box">
+        <p>Nama Pemain: <strong id="review-name"></strong></p>
+        <h3>Skor Anda: <span id="review-score"></span></h3>
+    </div>
+    <div id="review-container"></div>
+    <button class="btn" style="margin-top:20px;" onclick="location.reload()">Main Lagi</button>
+</div>
+
+<script>
+    const rawQuestions = [{"text": "Hutan bakau tersebar di berbagai wilayah berikut, KECUALI...", "correct": "Pantai-pantai Nusa Tenggara", "wrong": ["Pantai-pantai Sumatra", "Pantai-pantai Jawa", "Pantai-pantai Kalimantan"]}, {"text": "Tempat proses daur ulang yang menghasilkan oksigen di daerah pantai adalah salah satu fungsi...", "correct": "Kimia hutan mangrove", "wrong": ["Biologi hutan rawa", "Fisik hutan bakau", "Ekonomi hutan mangrove"]}, {"text": "Kawasan datar yang digenangi air tawar dan banyak ditumbuhi ramin disebut...", "correct": "Hutan rawa", "wrong": ["Hutan bakau", "Hutan musim", "Sabana"]}, {"text": "Berikut adalah jenis pohon di hutan rawa, KECUALI...", "correct": "Pohon jati", "wrong": ["Ramin", "Geronggang", "Pulai"]}, {"text": "Jenis pohon meranti rawa sering ditemukan tumbuh subur di wilayah...", "correct": "Hutan rawa", "wrong": ["Hutan mangrove", "Hutan musim", "Hutan hujan pegunungan"]}, {"text": "Hutan rawa di Indonesia sebagian besar tersebar di pulau...", "correct": "Sumatra dan Kalimantan", "wrong": ["Jawa dan Bali", "Sulawesi dan Papua", "Maluku dan Nusa Tenggara"]}, {"text": "Hutan yang terdapat di atas tumpukan tanah gambut dengan ciri khas air berwarna coklat kehitaman disebut...", "correct": "Hutan rawa gambut", "wrong": ["Hutan mangrove", "Hutan musim", "Hutan sabana tropis"]}, {"text": "Ciri air pada area hutan rawa gambut biasanya berwarna...", "correct": "Coklat kehitaman", "wrong": ["Jernih kebiruan", "Hijau lumut", "Merah kecoklatan"]}, {"text": "Ekosistem hutan yang tumbuhannya menggugurkan daun pada musim kemarau adalah...", "correct": "Hutan musim", "wrong": ["Hutan hujan tropis", "Hutan mangrove", "Hutan rawa gambut"]}, {"text": "Pohon jati dan eukaliptus merupakan jenis flora yang dominan di...", "correct": "Hutan musim", "wrong": ["Hutan hujan tropis", "Hutan bakau", "Hutan rawa"]}, {"text": "Hutan musim di Indonesia banyak tersebar di daerah...", "correct": "Jawa Tengah, Jawa Timur, dan Nusa Tenggara", "wrong": ["Sumatra, Kalimantan, dan Papua", "Bali, Sulawesi, dan Maluku", "Aceh, Riau, dan Jambi"]}, {"text": "Pohon cendana banyak ditemukan pada ekosistem...", "correct": "Hutan musim", "wrong": ["Hutan hujan tropis", "Hutan bakau", "Hutan gambut"]}, {"text": "Jenis cemara gunung juga sering dijumpai sebagai vegetasi pada ekosistem...", "correct": "Hutan musim", "wrong": ["Hutan pesisir", "Hutan rawa air tawar", "Hutan hujan dataran rendah"]}, {"text": "Kemampuan menahan dan menyerap tiupan angin kencang dari laut merupakan fungsi...", "correct": "Fisik hutan mangrove", "wrong": ["Kimia hutan mangrove", "Biologis hutan mangrove", "Ekonomis hutan mangrove"]}, {"text": "Pembuatan pulp (bubur kertas) bisa diperoleh dari pemanfaatan pohon di ekosistem...", "correct": "Hutan bakau", "wrong": ["Hutan musim", "Sabana buatan", "Hutan lumut"]}, {"text": "Pengelolaan barang tambang di Indonesia salah satunya didasarkan pada Undang-Undang...", "correct": "UU no 11 tahun 1967", "wrong": ["UU no 5 tahun 1990", "UU no 32 tahun 2009", "UU no 41 tahun 1999"]}, {"text": "Berdasarkan UU no 11 tahun 1967, bahan galian Golongan A disebut juga sebagai bahan galian...", "correct": "Strategis", "wrong": ["Vital", "Industri", "Ekonomis"]}, {"text": "Berdasarkan UU no 11 tahun 1967, bahan galian Golongan B disebut juga sebagai bahan galian...", "correct": "Vital", "wrong": ["Strategis", "Industri", "Non-strategis"]}, {"text": "Bahan galian Golongan C (Industri) ditujukan secara tidak langsung untuk memengaruhi...", "correct": "Hajat hidup orang banyak", "wrong": ["Keamanan militer negara", "Stabilitas iklim", "Hubungan internasional"]}, {"text": "Minyak bumi dan gas bumi merupakan contoh barang tambang yang termasuk dalam Golongan...", "correct": "A (Strategis)", "wrong": ["B (Vital)", "C (Industri)", "D (Tambahan)"]}, {"text": "Emas, perak, dan tembaga termasuk dalam bahan galian Golongan...", "correct": "B (Vital)", "wrong": ["A (Strategis)", "C (Industri)", "Bebas"]}, {"text": "Batu bara dan nikel digolongkan ke dalam bahan tambang Golongan A karena penting untuk...", "correct": "Pertahanan / keamanan negara", "wrong": ["Industri kerajinan rakyat", "Hajat hidup orang banyak semata", "Barang konstruksi"]}, {"text": "Besi, bauksit, dan seng merupakan contoh dari bahan tambang...", "correct": "Golongan B (Vital)", "wrong": ["Golongan A (Strategis)", "Golongan C (Industri)", "Energi kelautan"]}, {"text": "Pasir kuarsa, gipsum, batu kapur, asbes, dan mika termasuk dalam bahan galian...", "correct": "Golongan C (Industri)", "wrong": ["Golongan A (Strategis)", "Golongan B (Vital)", "Golongan D (Terbarukan)"]}, {"text": "Tujuan utama pemanfaatan bahan galian Golongan A (Strategis) adalah untuk...", "correct": "Pertahanan / keamanan negara", "wrong": ["Meningkatkan pariwisata", "Mengurangi polusi udara", "Memenuhi kebutuhan pabrik gipsum"]}];
+    let questions = [];
+    let currentQIndex = 0;
+    let score = 0;
+    let timerVal = 15;
+    let timeRemaining = 15;
+    let timerInterval;
+    let playerName = "";
+    let userAnswers = [];
+    let isAnswered = false;
+
+    function shuffle(array) {
+        let currentIndex = array.length, randomIndex;
+        while (currentIndex != 0) {
+            randomIndex = Math.floor(Math.random() * currentIndex);
+            currentIndex--;
+            [array[currentIndex], array[randomIndex]] = [array[randomIndex], array[currentIndex]];
+        }
+        return array;
+    }
+
+    function startQuiz() {
+        const nameInput = document.getElementById("player-name").value.trim();
+        if(!nameInput) { alert("Silakan masukkan nama Anda terlebih dahulu!"); return; }
+        playerName = nameInput;
+        timerVal = parseInt(document.getElementById("time-select").value);
+        
+        // Randomize questions
+        questions = shuffle([...rawQuestions]);
+        // Randomize options
+        questions.forEach(q => {
+            let opts = [q.correct, ...q.wrong];
+            q.options = shuffle(opts);
+        });
+
+        document.getElementById("setup-screen").classList.add("hidden");
+        document.getElementById("quiz-screen").classList.remove("hidden");
+        document.getElementById("display-name").innerText = playerName;
+        
+        loadQuestion();
+    }
+
+    function loadQuestion() {
+        if(currentQIndex >= questions.length) {
+            endQuiz();
+            return;
+        }
+        isAnswered = false;
+        timeRemaining = timerVal;
+        updateTimerDisplay();
+        
+        const q = questions[currentQIndex];
+        document.getElementById("question-text").innerText = (currentQIndex + 1) + ". " + q.text;
+        
+        const optsContainer = document.getElementById("options-container");
+        optsContainer.innerHTML = "";
+        
+        q.options.forEach(opt => {
+            const btn = document.createElement("button");
+            btn.className = "btn option-btn";
+            btn.innerText = opt;
+            btn.onclick = () => handleAnswer(opt, btn);
+            optsContainer.appendChild(btn);
+        });
+        
+        timerInterval = setInterval(() => {
+            timeRemaining--;
+            updateTimerDisplay();
+            if(timeRemaining <= 0) {
+                clearInterval(timerInterval);
+                handleTimeOut();
+            }
+        }, 1000);
+    }
+
+    function updateTimerDisplay() {
+        document.getElementById("timer").innerText = timeRemaining + "s";
+    }
+
+    function handleAnswer(selectedOpt, btnElement) {
+        if(isAnswered) return;
+        isAnswered = true;
+        clearInterval(timerInterval);
+        
+        const q = questions[currentQIndex];
+        const isCorrect = (selectedOpt === q.correct);
+        
+        const allBtns = document.querySelectorAll(".option-btn");
+        allBtns.forEach(b => {
+            b.disabled = true;
+            if(b.innerText === q.correct) {
+                b.classList.add("correct");
+            }
+        });
+
+        if(isCorrect) {
+            confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 } });
+            score++;
+        } else {
+            btnElement.classList.add("wrong");
+        }
+        
+        userAnswers.push({
+            question: q.text,
+            correct: q.correct,
+            selected: selectedOpt
+        });
+
+        setTimeout(() => {
+            currentQIndex++;
+            loadQuestion();
+        }, 2500);
+    }
+
+    function handleTimeOut() {
+        if(isAnswered) return;
+        isAnswered = true;
+        
+        const q = questions[currentQIndex];
+        const allBtns = document.querySelectorAll(".option-btn");
+        allBtns.forEach(b => {
+            b.disabled = true;
+            if(b.innerText === q.correct) {
+                b.classList.add("correct"); // Show correct answer when timeout
+            }
+        });
+        
+        userAnswers.push({
+            question: q.text,
+            correct: q.correct,
+            selected: "Waktu Habis"
+        });
+
+        setTimeout(() => {
+            currentQIndex++;
+            loadQuestion();
+        }, 2500);
+    }
+
+    function endQuiz() {
+        document.getElementById("quiz-screen").classList.add("hidden");
+        document.getElementById("review-screen").classList.remove("hidden");
+        
+        document.getElementById("review-name").innerText = playerName;
+        const finalScore = (score / questions.length) * 100;
+        document.getElementById("review-score").innerText = finalScore.toFixed(0);
+        
+        const revContainer = document.getElementById("review-container");
+        userAnswers.forEach((ans, i) => {
+            const div = document.createElement("div");
+            div.className = "review-item";
+            const isCorrect = ans.correct === ans.selected;
+            div.innerHTML = `
+                <p><strong>${i+1}. ${ans.question}</strong></p>
+                <p>Jawaban Benar: <span class="review-correct">${ans.correct}</span></p>
+                <p>Jawaban Anda: <span class="${isCorrect ? 'review-correct' : 'review-wrong'}">${ans.selected}</span></p>
+            `;
+            revContainer.appendChild(div);
+        });
+    }
+</script>
+</body>
+</html>
